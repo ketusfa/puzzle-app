@@ -12,32 +12,33 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.puzzlesapp.ui.theme.PuzzlesAppTheme
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Box
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.width
-import androidx.compose.ui.unit.dp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,7 +49,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainMenuScreen()
+                    PuzzlesApp()
                 }
             }
         }
@@ -56,7 +57,33 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainMenuScreen() {
+fun PuzzlesApp() {
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = "main_menu" // Стартовый экран
+    ) {
+        // Главное меню
+        composable("main_menu") {
+            MainMenuScreen(navController = navController)
+        }
+        // Экран настроек
+        composable("settings") {
+            SettingsScreen(navController = navController)
+        }
+        // Экран игры
+        composable("game") {
+            GameScreen(navController = navController)
+        }
+    }
+}
+
+@Composable
+fun MainMenuScreen(navController: NavHostController) {
+
+    val showExitDialog = remember { mutableStateOf(false) }
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -81,22 +108,111 @@ fun MainMenuScreen() {
             // Кнопка "Начать игру" с иконкой игры
             GameButton(
                 text = "Начать игру",
-                onClick = { },
+                onClick = { navController.navigate("game") },
                 iconRes = R.drawable.start_image // Ваша иконка для игры
             )
 
             // Кнопка "Настройки" с иконкой шестеренки
             GameButton(
                 text = "Настройки",
-                onClick = { },
+                onClick = { navController.navigate("settings") },
                 iconRes = R.drawable.sett_image // Ваша иконка настроек
             )
 
             // Кнопка "Выход" с иконкой выхода
             GameButton(
                 text = "Выход",
-                onClick = { },
-                iconRes = R.drawable.exit_image // Ваша иконка выхода
+                onClick = {
+                    showExitDialog.value = true // Показываем диалог
+                },
+                iconRes = R.drawable.exit_image
+            )
+
+            // Диалоговое окно подтверждения выхода
+            if (showExitDialog.value) {
+                ExitConfirmationDialog(
+                    onConfirm = {
+                        // Закрываем приложение
+                        android.os.Process.killProcess(android.os.Process.myPid())
+                    },
+                    onDismiss = {
+                        showExitDialog.value = false // Скрываем диалог
+                    }
+                )
+            }
+        }
+    }
+}
+
+// Диалоговое окно подтверждения выхода
+@Composable
+fun ExitConfirmationDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss, // Закрытие при клике вне диалога
+        title = {
+            Text(
+                text = "Выход из игры",
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            )
+        },
+        text = {
+            Text("Вы действительно хотите выйти из игры?")
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFD32F2F) // Красный цвет для подтверждения
+                )
+            ) {
+                Text("Да")
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = onDismiss
+            ) {
+                Text("Нет")
+            }
+        }
+    )
+}
+
+@Composable
+fun GameScreen(navController: NavHostController) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF1A1A2E)), // Синий фон
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            Text(
+                text = "Игровой экран",
+                color = Color.White,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = "Здесь будет игра-пазл",
+                color = Color.White,
+                fontSize = 18.sp
+            )
+
+            // Кнопка возврата в меню
+            GameButton(
+                text = "Назад в меню",
+                onClick = {
+                    navController.popBackStack() // ВОЗВРАТ НАЗАД
+                }
             )
         }
     }
@@ -182,6 +298,14 @@ fun GameTitle() {
 @Composable
 fun MainMenuPreview() {
     PuzzlesAppTheme {
-        MainMenuScreen()
+        MainMenuScreen(navController = rememberNavController())
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun GamePreview() {
+    PuzzlesAppTheme {
+        GameScreen(navController = rememberNavController())
     }
 }
